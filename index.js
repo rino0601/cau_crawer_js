@@ -1,46 +1,77 @@
 /**
  * Created by rino0 on 2017-04-17.
  */
-var webdriver = require('selenium-webdriver'),
+const fs = require('fs');
+const Promise = require("bluebird");
+const webdriver = require('selenium-webdriver'),
     By = webdriver.By,
     until = webdriver.until;
-
-var driver = new webdriver.Builder()
+const driver = new webdriver.Builder()
     .forBrowser('chrome')
     .build();
 
 driver.get("http://portal.cau.ac.kr");
 
-// def do_some_for_lecture(window_handle, lecture_name):
-// # // *[ @ id = "repeat5_1_repeat6_1_output8"]
-// browser.switch_to.window(window_handle)
-// browser.switch_to.frame(browser.find_element_by_id('menuFrame'))
-// board_list_tbody = find_element_by_xpath_until_located('//*[@id="repeat5_1_repeat6"]/table/tbody')
-//
-// board_list = board_list_tbody.find_elements_by_css_selector('.w2output.depth3_out')
-// for board in board_list:
-// board_name = board.get_attribute('innerHTML')
-// board.click()
-// browser.switch_to.window(window_handle)
-// browser.switch_to.frame(browser.find_element_by_id('contentFrame'))
-// content = find_element_by_xpath_until_located('//body')
-// time.sleep(0.5)
-// html = content.get_attribute('innerHTML')
-// with open('html_{}_{}.html'.format(lecture_name, board_name), 'w') as f:
-// f.write(html)
-// browser.switch_to.window(window_handle)
-// browser.switch_to.frame(browser.find_element_by_id('menuFrame'))
-//
-//
-var findElementWithWaitByXpath = function (xpath) {
+
+const findElementWithWaitByXpath = function (xpath) {
+    // FIXME every thing is able to be replace By Promise.
     driver.wait(until.elementsLocated((By.xpath(xpath))), 10000);
     return driver.findElement(By.xpath(xpath));
 };
+function eachBoards(webElement) {
+    return webElement.click().then(function () {
+        return webElement.getText();
+    }).then(function (boardName) {
+        return driver.getWindowHandle().then(function (windowHandle) {
+            return driver.switchTo().window(windowHandle).then(function () {
+                return driver.switchTo().frame('contentFrame');
+            }).then(function () {
+                return driver.findElement(By.xpath('//body'));
+            }).then(function (body) {
+                return driver.wait(until.elementsLocated(By.xpath('//*[@id="row2"]'))).then(function () {
+                    return body.getAttribute("innerHTML");
+                });
+            }).then(function (html) {
+                fs.writeFileSync(boardName + ".html", html);
+                return driver.switchTo().window(windowHandle);
+            }).then(function () {
+                return driver.switchTo().frame("menuFrame");
+            });
+        });
+    });
+}
+function eachLecture(webElement) {
+    return webElement.click().then(function () {
+        return driver.getAllWindowHandles();
+    }).then(function (handles) {
+        return driver.switchTo().window(handles[1])
+    }).then(function () {
+        return driver.switchTo().frame("menuFrame");
+    }).then(function () {
+        return driver.findElement(By.xpath('//*[@id="repeat5_1_repeat6"]/table/tbody'));
+    }).then(function (boardListTableBody) {
+        return boardListTableBody.findElements(By.css('.w2output.depth3_out'));
+    }).then(function (boards) {
+        return Promise.each(boards, eachBoards); // MOST IMPORTANT.
+    }).then(function () {
+        return driver.close();
+    }).then(function () {
+        return driver.getAllWindowHandles();
+    }).then(function (handles) {
+        return driver.switchTo().window(handles[0]);
+    }).then(function () {
+        return driver.findElement(By.id('_modal'));
+    }).then(function (element) {
+        return driver.wait(until.elementIsNotVisible(element));
+    }).then(function () {
+        return driver.switchTo().frame("contentFrame");
+    });
+}
 try {
     var element;
     {// login
-        findElementWithWaitByXpath('//*[@id="txtUserID"]').sendKeys("id here");
-        driver.findElement(By.xpath('//*[@id="txtUserPwd"]')).sendKeys("password here");
+        findElementWithWaitByXpath('//*[@id="txtUserID"]').sendKeys("rino0601");
+        driver.findElement(By.xpath('//*[@id="txtUserPwd"]')).sendKeys("92645813@Cu");
         driver.findElement(By.xpath('//*[@id="btnLogin"]')).click();
     }
     {// enter eclass
@@ -52,27 +83,26 @@ try {
         driver.switchTo().frame('contentFrame');
         element = findElementWithWaitByXpath('//*[@id="infomationCourse_body_tbody"]');
         findElementWithWaitByXpath('//*[@id="infomationCourse_body_tbody"]/tr[1]');
-        var es=element.findElement(By.tagName('tr'));
+        element.findElements(By.css('tr')).then(function (elements) {
+            elements = elements.map(function (element) {
+                return element.getText().then(function (text) {
+                    return text !== "" ? element : null;
+                });
+            });
+            return Promise.all(elements);
+        }).then(function (elements) {
+            var lectures = elements.filter(function (elem) {
+                return elem !== null;
+            });
+
+            return Promise.each(lectures, eachLecture);
+        })
+        /*.catch(function (err) {
+         driver.quit();
+         });*/
     }
 } finally {
-    // driver.quit();
+    driver.quit();
 }
 
-// elements = [element for element in element.find_elements_by_tag_name('tr') if element.text is not '']
-// print(browser.window_handles)
-// print(len(elements))
-// for element in elements:
-// print(element)
-// element.click()
-// print(browser.window_handles)
-// handles_ = browser.window_handles[1]
-// print('enter popup window named %s' % handles_)
-// do_some_for_lecture(handles_, element.text)
-// browser.close()
-// browser.switch_to.window(browser.window_handles[0])
-// while browser.find_element_by_id('_modal').is_displayed():
-// browser.implicitly_wait(1), print('wait 1 sec')
-// browser.switch_to.frame(browser.find_element_by_id('contentFrame'))
-//
-// browser.switch_to.default_content()
-//
+
