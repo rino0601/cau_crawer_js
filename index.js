@@ -10,14 +10,6 @@ const driver = new webdriver.Builder()
     .forBrowser('chrome')
     .build();
 
-driver.get("http://portal.cau.ac.kr");
-
-
-const findElementWithWaitByXpath = function (xpath) {
-    // FIXME every thing is able to be replace By Promise.
-    driver.wait(until.elementsLocated((By.xpath(xpath))), 10000);
-    return driver.findElement(By.xpath(xpath));
-};
 function eachBoards(webElement) {
     return webElement.click().then(function () {
         return webElement.getText();
@@ -67,42 +59,47 @@ function eachLecture(webElement) {
         return driver.switchTo().frame("contentFrame");
     });
 }
-try {
-    var element;
-    {// login
-        findElementWithWaitByXpath('//*[@id="txtUserID"]').sendKeys("rino0601");
-        driver.findElement(By.xpath('//*[@id="txtUserPwd"]')).sendKeys("92645813@Cu");
-        driver.findElement(By.xpath('//*[@id="btnLogin"]')).click();
-    }
-    {// enter eclass
-        findElementWithWaitByXpath('//*[@id="ctl00_ctl37_RadMenu1_i3_hlMenu"]').click();
-        findElementWithWaitByXpath('//*[@id="External_Content_IFrame"]');
-        driver.get('http://cautis.cau.ac.kr/LMS/websquare/websquare.jsp?w2xPath=/LMS/comm/main.xml');
-    }
-    { // get course list
-        driver.switchTo().frame('contentFrame');
-        element = findElementWithWaitByXpath('//*[@id="infomationCourse_body_tbody"]');
-        findElementWithWaitByXpath('//*[@id="infomationCourse_body_tbody"]/tr[1]');
-        element.findElements(By.css('tr')).then(function (elements) {
-            elements = elements.map(function (element) {
-                return element.getText().then(function (text) {
-                    return text !== "" ? element : null;
-                });
-            });
-            return Promise.all(elements);
-        }).then(function (elements) {
-            var lectures = elements.filter(function (elem) {
-                return elem !== null;
-            });
 
-            return Promise.each(lectures, eachLecture);
-        })
-        /*.catch(function (err) {
-         driver.quit();
-         });*/
-    }
-} finally {
-    driver.quit();
-}
+driver.get("http://portal.cau.ac.kr").then(function () {
+    return driver.wait(until.elementLocated(By.xpath('//*[@id="txtUserID"]'))).then(function (element) {
+        return element.sendKeys("rino0601");
+    }).then(function () {
+        return driver.findElement(By.xpath('//*[@id="txtUserPwd"]')).sendKeys("92645813@Cu");
+    }).then(function () {
+        return driver.findElement(By.xpath('//*[@id="btnLogin"]')).click();
+    }).then(function () {
+        return driver.wait(until.elementLocated(By.xpath('//*[@id="ctl00_ctl37_RadMenu1_i3_hlMenu"]')));
+    }).then(function (element) {
+        return element.click();
+    }).then(function () {
+        return driver.wait(until.elementLocated(By.xpath('//*[@id="External_Content_IFrame"]')));
+    }).then(function (elementIgnored) {
+        return driver.get('http://cautis.cau.ac.kr/LMS/websquare/websquare.jsp?w2xPath=/LMS/comm/main.xml');
+    }).then(function () {
+        return driver.switchTo().frame('contentFrame');
+    }).then(function () {
+        return driver.wait(until.elementLocated(By.xpath('//*[@id="infomationCourse_body_tbody"]')));
+    }).then(function (element) {
+        return driver.wait(until.elementLocated(By.xpath('//*[@id="infomationCourse_body_tbody"]/tr[1]'))).then(function () {
+            return element.findElements(By.css('tr'));
+        });
+    }).then(function (elements) {
+        elements = elements.map(function (element) {
+            return element.getText().then(function (text) {
+                return text !== "" ? element : null;
+            });
+        });
+        return Promise.all(elements);
+    }).then(function (elements) {
+        var lectures = elements.filter(function (elem) {
+            return elem !== null;
+        });
+        return Promise.each(lectures, eachLecture);
+    });
+}).catch(function (error) {
+    throw error;
+}).then(function () {
+    return driver.quit();
+});
 
 
