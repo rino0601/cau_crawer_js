@@ -67,3 +67,4 @@ typings/
 *.iml
 out
 gen
+/db.development.sqlite

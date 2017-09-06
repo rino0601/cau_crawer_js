@@ -1,19 +1,22 @@
 /**
  * Created by rino0 on 2017-04-17.
+ *
+ * https://github.com/motdotla/dotenv
  */
+require('dotenv').config();
 const fs = require('fs');
 const Promise = require("bluebird");
 const webdriver = require('selenium-webdriver'),
     By = webdriver.By,
     until = webdriver.until;
-const driver = new webdriver.Builder()
-    .forBrowser('chrome')
-    .build();
-
 const models = require('./models'),
     sequelize = models.sequelize,
     Sequelize = models.Sequelize;
+const mail = require('./mail');
 
+const driver = new webdriver.Builder()
+    .forBrowser('chrome')
+    .build();
 
 function contentParser(matrix) {
     return matrix.map(function (item) {
@@ -239,16 +242,18 @@ function crawlerForUser(user) {
     });
 }
 
-
 // start main.
 sequelize.authenticate().then(function () {
     console.log('Connection has been established successfully.');
     return sequelize.sync();
 }).then(function () {
+    if (process.env.NODE_ENV !== 'development') {
+        return;
+    }
     return models.User.findOrCreate({
-        where: {id: 'rino0601'},
+        where: {id: process.env.CAU_ID},
         defaults: {
-            password: '92645813@Cu'
+            password: process.env.CAU_PW
         }
     });
 }).then(function () {
