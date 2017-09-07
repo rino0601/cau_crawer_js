@@ -6,9 +6,10 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import {applyMiddleware, combineReducers, compose, createStore} from 'redux';
 import {ApolloClient, ApolloProvider} from 'react-apollo';
+import {BrowserRouter} from "react-router-dom"
 
 import './index.css';
-import App from './App';
+import App from './container/App';
 import registerServiceWorker from './registerServiceWorker';
 
 // By default, this client will send queries to the
@@ -39,7 +40,9 @@ const store = createStore(
 
 ReactDOM.render(
     <ApolloProvider client={client} store={store}>
-        <App/>
+        <BrowserRouter>
+            <App/>
+        </BrowserRouter>
     </ApolloProvider>
     , document.getElementById('root'));
 registerServiceWorker();
