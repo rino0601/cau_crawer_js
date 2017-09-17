@@ -1,9 +1,12 @@
 import React, {Component} from 'react';
-import {Container, Icon, Image, Menu, Popup, Segment, Sidebar} from 'semantic-ui-react'
+import {Container, Icon, Menu, Segment, Sidebar} from 'semantic-ui-react'
 import {Link, Route, Switch} from 'react-router-dom'
 
 import Home from "./Home";
 import NotFound from './NotFount';
+import Register from "./Register";
+import Account from "./Account";
+import LoginItem from "../component/LoginItem";
 
 class App extends Component {
 
@@ -40,7 +43,7 @@ class App extends Component {
                     </Menu.Item>
                 </Sidebar>
                 <Sidebar.Pusher onClick={this.closeSidebar} dimmed={isSidebarOpen}>
-                    <Menu pointing secondary size="big">
+                    <Menu pointing secondary size="large">
                         <Menu.Item icon="sidebar" onClick={this.openSidebar}/>
                         <Menu.Item as={Link} to="/">
                             <Menu.Header>
@@ -48,24 +51,16 @@ class App extends Component {
                             </Menu.Header>
                         </Menu.Item>
                         <Menu.Menu position='right'>
-                            {false
-                                ? <Menu.Item as={Link} name='sign in' to="/account"/>
-                                : <Popup
-                                    trigger={<Menu.Item style={{
-                                        paddingTop: 7, paddingBottom: 7
-                                    }}><Image src="http://www.gravatar.com/avatar/?d=identicon" avatar/></Menu.Item>}
-                                    on='click'
-                                    position='bottom right'
-                                    offset={-20}
-                                    content='I am positioned to the bottom right'
-                                    hideOnScroll
-                                />
-                            }
+                            <LoginItem isLogin={true}/>
                         </Menu.Menu>
                     </Menu>
                     <Container>
                         <Switch>
                             <Route exact path="/" component={Home}/>
+                            <Route path="/account" component={({match}) => (<Switch>
+                                <Route path={match.url + "/register"} component={Register}/>
+                                <Route path={match.url} component={Account}/>
+                            </Switch>)}/>
                             <Route component={NotFound}/>
                         </Switch>
                     </Container>

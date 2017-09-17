@@ -7,6 +7,7 @@ import ReactDOM from 'react-dom';
 import {applyMiddleware, combineReducers, compose, createStore} from 'redux';
 import {ApolloClient, ApolloProvider} from 'react-apollo';
 import {BrowserRouter} from "react-router-dom"
+import {reducer as formReducer} from "redux-form";
 
 import './index.css';
 import App from './container/App';
@@ -27,6 +28,7 @@ const store = createStore(
     combineReducers({
         // todos: todoReducer,
         // users: userReducer,
+        form: formReducer,
         apollo: client.reducer(),
     }),
     {}, // initial state
